@@ -11,6 +11,10 @@ from selenium.common.exceptions import StaleElementReferenceException, NoSuchEle
 class TabulaSapiensParser:
     def __init__(self, url='https://figshare.com/articles/dataset/Tabula_Sapiens_release_1_0/14267219',
                  time_delay=0.1, browser="chrome"):
+
+        if browser not in ["chrome", "firefox"]:
+            raise ValueError("the browser value must be one of: chrome, firefox")
+
         self.url = url
         self.time_delay = time_delay
         self.browser = browser

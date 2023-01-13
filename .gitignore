@@ -5,6 +5,8 @@ __pycache__/
 # C extensions
 *.so
 
+.idea/
+
 # Distribution / packaging
 bin/
 build/
@@ -48,3 +50,5 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+geckodriver*
