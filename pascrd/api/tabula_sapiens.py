@@ -64,7 +64,8 @@ class TabulaSapiensParser:
         assert len(self.download_links) == self.file_number
 
 
-def download_tabula_sapiens_dataset(dataset_key: str, dataset_url: str, destination_path: str):
+def download_tabula_sapiens_dataset(dataset_key: str, dataset_url: str, destination_path: str, chunk_size=8192,
+                                    zip=True):
 
     dest_path = os.path.join(destination_path, dataset_key + ".h5ad.zip")
 
@@ -73,10 +74,11 @@ def download_tabula_sapiens_dataset(dataset_key: str, dataset_url: str, destinat
         if not os.path.isfile(dest_path):
             with open(dest_path, 'wb') as f:
                 pbar = tqdm(total=int(r.headers['Content-Length']))
-                for chunk in r.iter_content(chunk_size=8192):
+                for chunk in r.iter_content(chunk_size=chunk_size):
                     if chunk:  # filter out keep-alive new chunks
                         f.write(chunk)
                         pbar.update(len(chunk))
 
-    with zipfile.ZipFile(dest_path, 'r') as zip_ref:
-        zip_ref.extractall(destination_path)
+    if zip:
+        with zipfile.ZipFile(dest_path, 'r') as zip_ref:
+            zip_ref.extractall(destination_path)

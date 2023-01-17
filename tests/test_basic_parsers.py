@@ -1,6 +1,8 @@
 import pytest
-from pascrd.api.tabula_sapiens import TabulaSapiensParser
+from pascrd.api.tabula_sapiens import TabulaSapiensParser, download_tabula_sapiens_dataset
 from pascrd.api.human_cell_atlas import HCAParser
+import requests_mock
+import os
 
 
 def test_basic_parser_chrome():
@@ -30,6 +32,21 @@ def test_basic_hca_parser():
     parser = HCAParser()
     parser.collect_project_identifiers()
     parser.collect_project_metadata()
-    assert len(parser.project_identifiers) == 313
-    assert len(parser.project_metadata) == 313
+    assert len(parser.project_identifiers) == len(parser.project_metadata) == 313
+
+
+@pytest.fixture(scope = "function")
+def get_tmp_ts_file(tmp_path):
+    return str(os.path.join(tmp_path))
+
+
+@requests_mock.Mocker(kw="mock")
+def test_mock_download_tabula_sapiens(get_tmp_ts_file, **kwargs):
+    expected_headers = {'Content-Type': 'text/html', 'Content-Length': '90000'}
+    kwargs["mock"].get('http://test.com', headers=expected_headers)
+    download_tabula_sapiens_dataset("fake_key", "http://test.com", get_tmp_ts_file, chunk_size=100,
+                                    zip=False)
+
+    assert os.path.isfile(os.path.join(get_tmp_ts_file, "fake_key.h5ad.zip"))
+
 
