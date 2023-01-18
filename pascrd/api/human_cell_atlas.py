@@ -1,19 +1,11 @@
-import requests
 from tqdm import tqdm
 import urllib.request
 import os
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-
-from urllib.request import urlopen, urlretrieve
-import threading
-from queue import Queue
 import requests
-import time
 import logging
 import json
-from collections import defaultdict
-from operator import ge, le
 
 
 class HCAParser:
@@ -26,9 +18,11 @@ class HCAParser:
         self.session.mount('http://', session_adapter)
         self.session.mount('https://', session_adapter)
         self.project_identifiers = {}
-        self.project_metadata = {}
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger()
+        with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+                                                   'data', 'hca.json')))) as metadata_json:
+            self.project_metadata = json.load(metadata_json)
 
     def collect_project_identifiers(self):
         with urllib.request.urlopen(self.directory) as project_url:
@@ -37,11 +31,12 @@ class HCAParser:
             for elem in json_dict['terms']:
                 self.project_identifiers[elem['term']] = elem['projectId']
 
-    def get_json_metadata(self, project, catalog="dcp22"):
+    def get_json_metadata(self, project, catalog="dcp23"):
         url = f'{self.directory}/{project}' if not self.directory.endswith('/') else f'{self.directory}{project}'
         return self.session.get(url, params={'catalog': catalog}).json()
 
     def collect_project_metadata(self, verbose=True):
+        self.project_metadata = {}
         count = 0
         for project_key, project_value in self.project_identifiers.items():
             count += 1
@@ -100,7 +95,7 @@ def download_file(url, output_path):
                 bar.update(size)
 
 
-def search_through_metadata_for_value(tree, current_key = None, key=None, value=None, project_key = None):
+def search_through_metadata_for_value(tree, current_key=None, key=None, value=None, project_key=None):
     if tree == value and key == current_key:
         yield project_key
         pass

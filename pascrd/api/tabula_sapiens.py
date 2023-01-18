@@ -65,7 +65,7 @@ class TabulaSapiensParser:
 
 
 def download_tabula_sapiens_dataset(dataset_key: str, dataset_url: str, destination_path: str, chunk_size=8192,
-                                    zip=True):
+                                    use_unzip=True):
 
     dest_path = os.path.join(destination_path, dataset_key + ".h5ad.zip")
 
@@ -79,6 +79,6 @@ def download_tabula_sapiens_dataset(dataset_key: str, dataset_url: str, destinat
                         f.write(chunk)
                         pbar.update(len(chunk))
 
-    if zip:
+    if use_unzip:
         with zipfile.ZipFile(dest_path, 'r') as zip_ref:
             zip_ref.extractall(destination_path)
