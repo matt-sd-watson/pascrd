@@ -3,6 +3,12 @@ from pascrd.api.tabula_sapiens import TabulaSapiensParser, download_tabula_sapie
 from pascrd.api.human_cell_atlas import HCAParser
 import requests_mock
 import os
+import mock
+import zipfile
+from zipfile import BadZipfile
+import responses
+from unittest import mock
+import shutil
 
 
 def test_basic_parser_chrome():
@@ -52,3 +58,27 @@ def test_mock_download_tabula_sapiens(get_tmp_ts_file, **kwargs):
     download_tabula_sapiens_dataset("fake_key", "http://test.com", get_tmp_ts_file, chunk_size=1, use_unzip=False)
 
     assert os.path.isfile(os.path.join(get_tmp_ts_file, "fake_key.h5ad.zip"))
+
+
+@mock.patch('zipfile.ZipFile')
+@mock.patch('zipfile.is_zipfile')
+@pytest.fixture(scope="function")
+def get_mock_zipfile(mock_is_zipfile, mock_zipfile):
+    mock_is_zipfile.return_value = True
+    mock_zipfile.return_value.namelist.return_value = ["__init__.py"]
+    return mock_zipfile
+
+
+@requests_mock.Mocker(kw="mock")
+def test_mock_download_tabula_sapiens_zipped(get_tmp_ts_file, **kwargs):
+    with pytest.raises(BadZipfile):
+        expected_headers = {'Content-Type': 'application/zip', 'Content-Length': '1',
+                        'one': 'one', 'two': 'two', 'three': 'three'}
+        kwargs["mock"].get('http://test.com', headers=expected_headers)
+        download_tabula_sapiens_dataset("fake_key", "http://test.com", get_tmp_ts_file, chunk_size=1, use_unzip=True)
+        assert os.path.isfile(os.path.join(get_tmp_ts_file, "fake_key.h5ad.zip"))
+
+    shutil.copy(os.path.join('data', 'test.zip'), os.path.join(get_tmp_ts_file, "fake_key.h5ad.zip"))
+    download_tabula_sapiens_dataset("fake_key", "http://test.com", get_tmp_ts_file, chunk_size=1, use_unzip=True)
+    assert os.path.isfile(os.path.join(get_tmp_ts_file, "fake_key.h5ad.zip"))
+
