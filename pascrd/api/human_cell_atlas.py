@@ -20,9 +20,11 @@ class HCAParser:
         self.project_identifiers = {}
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger()
-        with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+        if os.path.isfile(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+                                                   'data', 'hca.json')))):
+            with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
                                                    'data', 'hca.json')))) as metadata_json:
-            self.project_metadata = json.load(metadata_json)
+                self.project_metadata = json.load(metadata_json)
 
     def collect_project_identifiers(self):
         with urllib.request.urlopen(self.directory) as project_url:
@@ -35,7 +37,7 @@ class HCAParser:
         url = f'{self.directory}/{project}' if not self.directory.endswith('/') else f'{self.directory}{project}'
         return self.session.get(url, params={'catalog': catalog}).json()
 
-    def collect_project_metadata(self, verbose=True):
+    def collect_project_metadata(self, verbose=True, write_local=True):
         self.project_metadata = {}
         count = 0
         for project_key, project_value in self.project_identifiers.items():
@@ -45,6 +47,11 @@ class HCAParser:
                 self.logger.info(f"Processing dataset {count} of {len(self.project_identifiers)}: "
                                  f"{project_key} = {project_value}")
             self.project_metadata[project_value] = self.get_json_metadata(project_value)
+
+        if write_local:
+            with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+                                                       'data', 'hca.json'))), 'w') as metadata_json:
+                json.dump(self.project_metadata, metadata_json)
 
 
 def print_all_nested(tree, tree_key=None, project_id=None):

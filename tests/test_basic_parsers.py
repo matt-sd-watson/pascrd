@@ -43,7 +43,7 @@ def test_basic_hca_parser_reload():
     parser = HCAParser()
     parser.collect_project_identifiers()
     parser.collect_project_metadata()
-    assert len(parser.project_identifiers) == len(parser.project_metadata) == 288
+    assert len(parser.project_identifiers) == len(parser.project_metadata) == 313
 
 
 @pytest.fixture(scope="function")
