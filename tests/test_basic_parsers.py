@@ -37,6 +37,7 @@ def test_invalid_browser():
 def test_basic_hca_parser():
     parser = HCAParser()
     assert len(parser.project_metadata) == 313
+    print(parser.project_metadata)
 
 
 def test_basic_hca_parser_reload():
@@ -73,3 +74,27 @@ def test_mock_download_tabula_sapiens_zipped(get_tmp_ts_file, **kwargs):
                                                                                           "fake_key.h5ad.zip"))
     download_tabula_sapiens_dataset("fake_key", "http://test.com", get_tmp_ts_file, chunk_size=1, use_unzip=True)
     assert os.path.isfile(os.path.join(get_tmp_ts_file, "fake_key.h5ad.zip"))
+
+
+def test_bad_search():
+    parser = HCAParser()
+    with pytest.raises(ValueError):
+        parser.search(search_type="fake")
+
+
+def test_basic_search():
+    parser = HCAParser()
+    one_search_union = parser.search({"effectiveOrgan": "blood"})
+    two_search_union = parser.search({"effectiveOrgan": "blood", 'institution': 'Broad Institute'})
+    assert one_search_union != two_search_union
+    assert len(two_search_union) > len(one_search_union)
+
+    breast_parser = parser.search({"effectiveOrgan": "breast", "projectId": "a004b150-1c36-4af6-9bbd-070c06dbc17d"},
+                                    search_type="union")
+    assert len(breast_parser) == 11
+
+    breast_parser_2 = parser.search({"effectiveOrgan": "breast", "projectId": "a004b150-1c36-4af6-9bbd-070c06dbc17d"},
+                                    search_type="intersection")
+    assert len(breast_parser_2) == 1
+    assert breast_parser != breast_parser_2
+    assert len(breast_parser) > len(breast_parser_2)

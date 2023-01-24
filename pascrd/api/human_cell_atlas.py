@@ -26,6 +26,8 @@ class HCAParser:
                                                    'data', 'hca.json')))) as metadata_json:
                 self.project_metadata = json.load(metadata_json)
 
+        self.search_results = None
+
     def collect_project_identifiers(self):
         with urllib.request.urlopen(self.directory) as project_url:
             data = json.load(project_url)
@@ -52,6 +54,35 @@ class HCAParser:
             with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
                                                        'data', 'hca.json'))), 'w') as metadata_json:
                 json.dump(self.project_metadata, metadata_json)
+
+    def search(self, search_dict=None, search_type="union"):
+        if search_type not in ["intersection", "union"]:
+            raise ValueError("The search type must be either of intersection or union.")
+        search_results = []
+        for key, value in search_dict.items():
+            one_search_results = []
+            for project_key, project_values in self.project_metadata.items():
+                for searched_elem in search_through_metadata_for_value(project_values, key=key, value=value,
+                                                                       project_key=project_key):
+                    if searched_elem not in one_search_results:
+                        one_search_results.append(searched_elem)
+            search_results.append(one_search_results)
+        if search_type == "union":
+            found = []
+            for sub_list in search_results:
+                for elem in sub_list:
+                    if elem not in found:
+                        found.append(elem)
+            return found
+        elif search_type == "intersection":
+            counts = {}
+            for sub_list in search_results:
+                for elem in sub_list:
+                    if elem not in counts.keys():
+                        counts[elem] = 1
+                    else:
+                        counts[elem] += 1
+            return list({k: v for (k, v) in counts.items() if v == len(search_dict)}.keys())
 
 
 def print_all_nested(tree, tree_key=None, project_id=None):
