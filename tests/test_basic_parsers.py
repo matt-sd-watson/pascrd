@@ -1,6 +1,7 @@
 import pytest
 from pascrd.api.tabula_sapiens import TabulaSapiensParser, download_tabula_sapiens_dataset
 from pascrd.api.human_cell_atlas import HCAParser
+from pascrd.utils import collect_unique_hca_metadata_fields
 import requests_mock
 import os
 import mock
@@ -90,7 +91,7 @@ def test_basic_search():
     assert len(two_search_union) > len(one_search_union)
 
     breast_parser = parser.search({"effectiveOrgan": "breast", "projectId": "a004b150-1c36-4af6-9bbd-070c06dbc17d"},
-                                    search_type="union")
+                                  search_type="union")
     assert len(breast_parser) == 11
 
     breast_parser_2 = parser.search({"effectiveOrgan": "breast", "projectId": "a004b150-1c36-4af6-9bbd-070c06dbc17d"},
@@ -98,3 +99,10 @@ def test_basic_search():
     assert len(breast_parser_2) == 1
     assert breast_parser != breast_parser_2
     assert len(breast_parser) > len(breast_parser_2)
+
+
+def test_basic_collect_search_options():
+    parser = HCAParser()
+    assert {"organ", "laboratory", "institution", "email"}.issubset(parser.search_options.keys())
+    assert "blood" in parser.search_options["organ"]
+    
