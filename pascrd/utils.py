@@ -6,22 +6,39 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 
-def search_through_hca_metadata_for_value(tree, current_key=None, key=None, value=None, project_key=None):
-    if tree == value and key == current_key:
+def search_through_hca_metadata_for_value(tree, current_key=None, key=None, value=None, project_key=None,
+                                          search_type="full"):
+    if search_type not in ["full", "partial"]:
+        raise ValueError("The argument search_type must be either of partial or full.")
+    if search_type == "full":
+        if isinstance(tree, list):
+            search_condition_list = value in filter(None, tree)
+        elif not isinstance(tree, list) and not isinstance(tree, dict):
+            search_condition_top = tree == value
+    elif search_type == "partial":
+        if isinstance(tree, list):
+            search_condition_list = any(value.lower() in s for s in filter(None, tree) if isinstance(s, str)) or \
+                                    any(value.capitalize() in s for s in filter(None, tree) if isinstance(s, str)) or \
+                                    any(value.upper() in s for s in filter(None, tree) if isinstance(s, str))
+        elif not isinstance(tree, list) and not isinstance(tree, dict):
+            search_condition_top = tree is not None and tree is not False and isinstance(tree, str) and \
+                                   (value.lower() in tree or value.capitalize() in tree or value.upper() in tree)
+
+    if not isinstance(tree, list) and not isinstance(tree, dict) and key == current_key and search_condition_top:
         yield project_key
         pass
-    elif isinstance(tree, list) and value in tree and key == current_key:
+    elif isinstance(tree, list) and key == current_key and search_condition_list:
         yield project_key
         pass
     # case 1: if it is still a dictionary, recursively go through all entries
     elif isinstance(tree, dict):
         for sub_key, sub_value in tree.items():
-            yield from search_through_hca_metadata_for_value(sub_value, sub_key, key, value, project_key)
+            yield from search_through_hca_metadata_for_value(sub_value, sub_key, key, value, project_key, search_type)
     # case 2: if it is a list, evaluate the elem
     elif isinstance(tree, list):
         # case 2.1: if any of the elems are a dictionary, recursively go through them
         for element in tree:
-            yield from search_through_hca_metadata_for_value(element, current_key, key, value, project_key)
+            yield from search_through_hca_metadata_for_value(element, current_key, key, value, project_key, search_type)
 
 
 def iterate_matrices_tree(tree, keys=()):

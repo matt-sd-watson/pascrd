@@ -1,4 +1,3 @@
-from tqdm import tqdm
 import urllib.request
 import os
 from requests.adapters import HTTPAdapter
@@ -22,9 +21,9 @@ class HCAParser:
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger()
         if os.path.isfile(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
-                                                   'data', 'hca.json')))):
+                                                           'data', 'hca.json')))):
             with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
-                                                   'data', 'hca.json')))) as metadata_json:
+                                                       'data', 'hca.json')))) as metadata_json:
                 self.project_metadata = json.load(metadata_json)
 
         self.search_results = None
@@ -58,15 +57,18 @@ class HCAParser:
                                                        'data', 'hca.json'))), 'w') as metadata_json:
                 json.dump(self.project_metadata, metadata_json)
 
-    def search(self, search_dict=None, search_type="union"):
+    def search(self, search_dict=None, search_type="union", match_type="full"):
         if search_type not in ["intersection", "union"]:
-            raise ValueError("The search type must be either of intersection or union.")
+            raise ValueError("The argument search_type must be either of intersection or union.")
+        if match_type not in ["full", "partial"]:
+            raise ValueError("The argument match_type must be either of partial or full.")
         search_results = []
         for key, value in search_dict.items():
             one_search_results = []
             for project_key, project_values in self.project_metadata.items():
                 for searched_elem in search_through_hca_metadata_for_value(project_values, key=key, value=value,
-                                                                       project_key=project_key):
+                                                                           project_key=project_key,
+                                                                           search_type=match_type):
                     if searched_elem not in one_search_results:
                         one_search_results.append(searched_elem)
             search_results.append(one_search_results)
@@ -98,5 +100,3 @@ class HCAParser:
                         if sub_value not in self.search_options[sub_key]:
                             self.search_options[sub_key].append(sub_value)
         return self.search_options
-
-
