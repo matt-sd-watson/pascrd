@@ -62,16 +62,27 @@ class HCAParser:
             raise ValueError("The argument search_type must be either of intersection or union.")
         if match_type not in ["full", "partial"]:
             raise ValueError("The argument match_type must be either of partial or full.")
+
         search_results = []
         for key, value in search_dict.items():
-            one_search_results = []
-            for project_key, project_values in self.project_metadata.items():
-                for searched_elem in search_through_hca_metadata_for_value(project_values, key=key, value=value,
+            originally_list = isinstance(value, list)
+            value = [value] if not originally_list else value
+            if not originally_list:
+                one_search_results = []
+            for sub_search in value:
+                if originally_list:
+                    one_search_results = []
+                for project_key, project_values in self.project_metadata.items():
+                    for searched_elem in search_through_hca_metadata_for_value(project_values, key=key,
+                                                                               value=sub_search,
                                                                            project_key=project_key,
                                                                            search_type=match_type):
-                    if searched_elem not in one_search_results:
-                        one_search_results.append(searched_elem)
-            search_results.append(one_search_results)
+                        if searched_elem not in one_search_results:
+                            one_search_results.append(searched_elem)
+                    if originally_list:
+                        search_results.append(one_search_results)
+            if not originally_list:
+                search_results.append(one_search_results)
         if search_type == "union":
             found = []
             for sub_list in search_results:

@@ -111,18 +111,19 @@ def test_full_vs_partial_search():
     assert len(partial_close) == len(proper_exact)
 
 
+def test_multi_search():
+    parser = HCAParser()
+    one_organ = parser.search({"organ": "esophagus"})
+    print(len(one_organ))
+    one_organ_2 = parser.search({"organ": "nose"})
+    print(len(one_organ_2))
+    two_organ = parser.search({"organ": ["esophagus", "nose"]})
+    assert len(two_organ) == len(one_organ) + len(one_organ_2)
+    no_overlap = parser.search({"organ": ["esophagus", "nose"]}, search_type="intersection")
+    assert len(no_overlap) == 0
+
 
 def test_basic_collect_search_options():
     parser = HCAParser()
     assert {"organ", "laboratory", "institution", "email"}.issubset(parser.search_options.keys())
     assert "blood" in parser.search_options["organ"]
-    print(parser.search_options["organ"])
-
-
-def test_arguments():
-    organs = ['brain', 'blood', 'skin of body', 'hematopoietic system', 'bone marrow', 'spleen', 'lung', 'spinal cord', 'liver', 'skin', 'tail', 'eye', 'blood vessel', None, 'intestine', 'colon', 'esophagus', 'small intestine',
-              'stomach', 'breast', 'bone element', 'intervertebral disk', 'skeletal element', 'bile duct', 'bladder organ']
-    search = "bru"
-    current_key = "poop"
-    print((current_key == "poop") and (any(search in elem for elem in filter(None, organs)) or
-          any(search.lower() in elem for elem in filter(None, organs))))
