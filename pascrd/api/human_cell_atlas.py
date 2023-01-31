@@ -6,11 +6,14 @@ import requests
 import logging
 import json
 from pascrd.utils import search_through_hca_metadata_for_value, collect_unique_hca_metadata_fields
+import asyncio
+import aiohttp
 
 
 class HCAParser:
     def __init__(self, repo_directory="https://service.azul.data.humancellatlas.org/index/projects/",
                  session_retries=3, session_backoff=0.5):
+        self.process_count = None
         self.directory = repo_directory
         self.session = requests.Session()
         session_retry = Retry(connect=session_retries, backoff_factor=session_backoff)
@@ -20,37 +23,55 @@ class HCAParser:
         self.project_identifiers = {}
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger()
+        self.catalog = None
         if os.path.isfile(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
                                                            'data', 'hca.json')))):
             with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
                                                        'data', 'hca.json')))) as metadata_json:
                 self.project_metadata = json.load(metadata_json)
+        else:
+            self.project_metadata = None
 
         self.search_results = None
         self.search_options = None
-        self._collect_search_options()
+        if self.project_metadata is not None:
+            self._collect_search_options()
 
     def collect_project_identifiers(self):
         with urllib.request.urlopen(self.directory) as project_url:
             data = json.load(project_url)
             json_dict = data['termFacets']['project']
             for elem in json_dict['terms']:
-                self.project_identifiers[elem['term']] = elem['projectId']
+                self.project_identifiers[elem['term']] = elem['projectId'][0] if \
+                    isinstance(elem['projectId'], list) else elem['projectId']
 
-    def get_json_metadata(self, project, catalog="dcp23"):
-        url = f'{self.directory}/{project}' if not self.directory.endswith('/') else f'{self.directory}{project}'
-        return self.session.get(url, params={'catalog': catalog}).json()
+    def get_project_json_url(self, project):
+        return f'{self.directory}/{project}' if not self.directory.endswith('/') else f'{self.directory}{project}'
 
-    def collect_project_metadata(self, verbose=True, write_local=True):
+    def collect_project_metadata(self, verbose=True, catalog="dcp23", write_local=True):
         self.project_metadata = {}
-        count = 0
-        for project_key, project_value in self.project_identifiers.items():
-            count += 1
-            project_value = project_value[0] if isinstance(project_value, list) else project_value
-            if verbose:
-                self.logger.info(f"Processing dataset {count} of {len(self.project_identifiers)}: "
-                                 f"{project_key} = {project_value}")
-            self.project_metadata[project_value] = self.get_json_metadata(project_value)
+        self.catalog = catalog
+        self.process_count = 0
+
+        async def get_hca_url(identifier, session):
+            try:
+                url = self.get_project_json_url(identifier)
+                async with session.get(url=url, params={'catalog': self.catalog}) as response:
+                    finding = await response.json()
+                    self.project_metadata[identifier] = finding
+                    self.process_count += 1
+                    if verbose and self.process_count % 10 == 0:
+                        self.logger.info(f"Processing dataset {self.process_count} of {len(self.project_identifiers)}")
+            except Exception as e:
+                self.logger.info("Unable to get url {} due to {}.".format(url, e.__class__))
+
+        async def main(query_dict):
+            count = 0
+            async with aiohttp.ClientSession() as session:
+                await asyncio.gather(*[get_hca_url(query_value, session) for query_key, query_value in
+                                       query_dict.items()])
+
+        asyncio.run(main(self.project_identifiers))
 
         if write_local:
             with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',

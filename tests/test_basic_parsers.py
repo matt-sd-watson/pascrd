@@ -101,6 +101,18 @@ def test_basic_search():
     assert len(breast_parser) > len(breast_parser_2)
 
 
+def test_basic_search_2():
+    parser = HCAParser()
+    multi_search_union = parser.search({"genusSpecies": "Mus musculus", 'organ': 'brain'}, search_type="intersection")
+    assert len(multi_search_union) == 9
+    same_search_partial = parser.search({"genusSpecies": "mus", 'organ': 'BRAI'}, search_type="intersection",
+                                        match_type="partial")
+    assert len(same_search_partial) == len(multi_search_union) == 9
+    multi_search_union = parser.search({"genusSpecies": "Mus musculus", 'organ': 'brain',
+                                        'organPart': 'skin of body'}, search_type="intersection")
+    assert len(multi_search_union) == 1
+
+
 def test_full_vs_partial_search():
     parser = HCAParser()
     empty_exact = parser.search({"effectiveOrgan": "esophagu"})
@@ -114,10 +126,12 @@ def test_full_vs_partial_search():
 def test_multi_search():
     parser = HCAParser()
     one_organ = parser.search({"organ": "esophagus"})
-    print(len(one_organ))
     one_organ_2 = parser.search({"organ": "nose"})
-    print(len(one_organ_2))
     two_organ = parser.search({"organ": ["esophagus", "nose"]})
+    two_organ_off = parser.search({"organ": ["esophagu", "nose", "bloo"]})
+    two_organ_partial = parser.search({"organ": ["esophagu", "nose"]}, match_type="partial")
+    assert len(two_organ_partial) == len(two_organ)
+    assert len(two_organ_off) == len(one_organ_2)
     assert len(two_organ) == len(one_organ) + len(one_organ_2)
     no_overlap = parser.search({"organ": ["esophagus", "nose"]}, search_type="intersection")
     assert len(no_overlap) == 0
@@ -127,3 +141,5 @@ def test_basic_collect_search_options():
     parser = HCAParser()
     assert {"organ", "laboratory", "institution", "email"}.issubset(parser.search_options.keys())
     assert "blood" in parser.search_options["organ"]
+
+
