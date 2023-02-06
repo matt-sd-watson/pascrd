@@ -24,9 +24,9 @@ class HCAParser:
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger()
         self.catalog = None
-        if os.path.isfile(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+        if os.path.isfile(str(os.path.abspath(os.path.join(os.path.dirname(__file__),
                                                            'data', 'hca.json')))):
-            with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+            with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__),
                                                        'data', 'hca.json')))) as metadata_json:
                 self.project_metadata = json.load(metadata_json)
         else:
@@ -48,33 +48,32 @@ class HCAParser:
     def get_project_json_url(self, project):
         return f'{self.directory}/{project}' if not self.directory.endswith('/') else f'{self.directory}{project}'
 
+    async def get_hca_url(self, identifier, session, verbose=True):
+        try:
+            url = self.get_project_json_url(identifier)
+            async with session.get(url=url, params={'catalog': self.catalog}) as response:
+                finding = await response.json()
+                self.project_metadata[identifier] = finding
+                self.process_count += 1
+                if verbose and self.process_count % 10 == 0:
+                    self.logger.info(f"Processing dataset {self.process_count} of {len(self.project_identifiers)}")
+        except Exception as e:
+            self.logger.info("Unable to get url {} due to {}.".format(url, e.__class__))
+
+    async def main(self, query_dict, verbose=True):
+        async with aiohttp.ClientSession() as session:
+            await asyncio.gather(*[self.get_hca_url(query_value, session, verbose) for query_key, query_value in
+                                   query_dict.items()])
+
     def collect_project_metadata(self, verbose=True, catalog="dcp23", write_local=True):
         self.project_metadata = {}
         self.catalog = catalog
         self.process_count = 0
 
-        async def get_hca_url(identifier, session):
-            try:
-                url = self.get_project_json_url(identifier)
-                async with session.get(url=url, params={'catalog': self.catalog}) as response:
-                    finding = await response.json()
-                    self.project_metadata[identifier] = finding
-                    self.process_count += 1
-                    if verbose and self.process_count % 10 == 0:
-                        self.logger.info(f"Processing dataset {self.process_count} of {len(self.project_identifiers)}")
-            except Exception as e:
-                self.logger.info("Unable to get url {} due to {}.".format(url, e.__class__))
-
-        async def main(query_dict):
-            count = 0
-            async with aiohttp.ClientSession() as session:
-                await asyncio.gather(*[get_hca_url(query_value, session) for query_key, query_value in
-                                       query_dict.items()])
-
-        asyncio.run(main(self.project_identifiers))
+        asyncio.run(self.main(self.project_identifiers, verbose))
 
         if write_local:
-            with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
+            with open(str(os.path.abspath(os.path.join(os.path.dirname(__file__),
                                                        'data', 'hca.json'))), 'w') as metadata_json:
                 json.dump(self.project_metadata, metadata_json)
 
