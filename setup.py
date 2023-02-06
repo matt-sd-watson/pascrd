@@ -3,7 +3,11 @@ from setuptools import setup, find_packages
 setup(
     name="pascrd",
     version="0.1.0",
-    url="https",
+    url='https://github.com/matt-sd-watson/pascrd/',
+    project_urls={
+        "Issues": "https://github.com/matt-sd-watson/pascrd/issues",
+        "Source": "https://github.com/matt-sd-watson/pascrd",
+    },
     author="Matthew Watson",
     author_email="mwatson@lunenfeld.ca",
     packages=find_packages(),
@@ -16,8 +20,7 @@ setup(
     keywords=["single-cell download repository"],
     classifiers=[
         "Intended Audience :: Science/Research",
-        "Programming Language :: Python :: 3.9",
-        "Topic :: Scientific/Engineering :: Bioinformatics",
+        "Programming Language :: Python :: 3.9"
     ],
     license="Unlicensed",
     install_requires=["selenium", "requests", "asyncio", "aiohttp"],
