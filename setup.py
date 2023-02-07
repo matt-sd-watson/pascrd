@@ -24,6 +24,6 @@ setup(
     ],
     license="Unlicensed",
     install_requires=["selenium", "requests", "asyncio", "aiohttp", "pytest", "requests-mock",
-                      "urllib3"],
+                      "urllib3", "tqdm"],
     python_requires=">=3.9.0",
 )
