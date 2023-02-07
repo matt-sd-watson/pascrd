@@ -23,6 +23,7 @@ setup(
         "Programming Language :: Python :: 3.9"
     ],
     license="Unlicensed",
-    install_requires=["selenium", "requests", "asyncio", "aiohttp"],
+    install_requires=["selenium", "requests", "asyncio", "aiohttp", "pytest", "requests-mock",
+                      "urllib3"],
     python_requires=">=3.9.0",
 )
