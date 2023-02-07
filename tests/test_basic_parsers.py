@@ -1,14 +1,9 @@
 import pytest
 from pascrd.api.tabula_sapiens import TabulaSapiensParser, download_tabula_sapiens_dataset
 from pascrd.api.human_cell_atlas import HCAParser
-from pascrd.utils import collect_unique_hca_metadata_fields
 import requests_mock
 import os
-import mock
-import zipfile
 from zipfile import BadZipfile
-import responses
-from unittest import mock
 import shutil
 import collections
 
