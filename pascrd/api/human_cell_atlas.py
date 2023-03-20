@@ -59,13 +59,13 @@ class HCAParser:
                     self.logger.info(f"Processing dataset {self.process_count} of {len(self.project_identifiers)}")
         except Exception as e:
             self.logger.info("Unable to get url {} due to {}.".format(url, e.__class__))
-
+    
     async def main(self, query_dict, verbose=True):
         async with aiohttp.ClientSession() as session:
             await asyncio.gather(*[self.get_hca_url(query_value, session, verbose) for query_key, query_value in
                                    query_dict.items()])
 
-    def collect_project_metadata(self, verbose=True, catalog="dcp23", write_local=True):
+    def collect_project_metadata(self, verbose=True, catalog="dcp24", write_local=True):
         self.project_metadata = {}
         self.catalog = catalog
         self.process_count = 0
