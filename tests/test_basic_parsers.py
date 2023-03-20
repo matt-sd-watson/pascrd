@@ -33,7 +33,7 @@ def test_invalid_browser():
 
 def test_basic_hca_parser():
     parser = HCAParser()
-    assert len(parser.project_metadata) == 313
+    assert len(parser.project_metadata) == 324
 
 
 def test_basic_hca_parser_reload():
@@ -41,7 +41,7 @@ def test_basic_hca_parser_reload():
     first_metadata = parser.project_metadata
     parser.collect_project_identifiers()
     parser.collect_project_metadata()
-    assert len(parser.project_identifiers) == len(parser.project_metadata) == 313
+    assert len(parser.project_identifiers) == len(parser.project_metadata) == 324
     assert collections.Counter(first_metadata.keys()) == collections.Counter(parser.project_metadata.keys())
 
 
